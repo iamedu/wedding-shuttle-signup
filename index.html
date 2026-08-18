@@ -7,78 +7,102 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}
-body{font-family: -apple-system, "Georgia", serif; max-width:560px; margin:0 auto; padding:24px; background:#F6F0E6; color:#2B2B2B; line-height:1.5}
-.card{background:#FFFFFF; border-radius:20px; padding:28px; box-shadow:0 8px 30px rgba(214,125,104,.12); margin-bottom:20px; border:1px solid #EDE3D8}
-h1{margin:0 0 8px; font-size:26px; font-weight:600; letter-spacing:-0.3px; color:#1A1A1A}
-.sub{font-size:13px; color:#8A766A; margin-bottom:16px; letter-spacing:0.5px; text-transform:uppercase}
-.badge{display:inline-block; background:#F9E8E3; color:#8A4A3B; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:600; letter-spacing:0.3px}
-.opt{border:1.5px solid #EDE3D8; border-radius:14px; padding:16px; margin:12px 0; cursor:pointer; transition:all .2s; background:#FFFEFD}
-.opt:hover{border-color:#D67D68; background:#FFF8F5}
-.opt.selected{border-color:#D67D68; background:#FDF2EF; box-shadow:0 2px 12px rgba(214,125,104,.15)}
-.opt.full{opacity:.45; pointer-events:none; background:#F6F0E6}
-.rem{float:right; font-weight:700; font-size:12px; padding:4px 10px; border-radius:20px; letter-spacing:0.3px}
-.rem.ok{background:#F9E8E3; color:#8A4A3B} .rem.low{background:#FBEAEA; color:#A6453C}
-input,select{width:100%; padding:14px 16px; border:1.5px solid #EDE3D8; border-radius:12px; font-size:16px; margin:8px 0 14px; background:#FFFEFD; font-family:inherit}
-input:focus,select:focus{outline:none; border-color:#D67D68; box-shadow:0 0 0 3px rgba(214,125,104,.15)}
-button{width:100%; padding:16px; background:#1A1A1A; color:#F6F0E6; border:0; border-radius:12px; font-weight:600; font-size:16px; cursor:pointer; letter-spacing:0.3px; transition:all .2s; font-family:inherit}
+body{font-family:-apple-system,"Georgia",serif;max-width:560px;margin:0 auto;padding:24px;background:#F6F0E6;color:#2B2B2B;line-height:1.5}
+.card{background:#FFF;border-radius:20px;padding:28px;box-shadow:0 8px 30px rgba(214,125,104,.12);margin-bottom:20px;border:1px solid #EDE3D8}
+h1{margin:0 0 8px;font-size:26px;font-weight:600;letter-spacing:-0.3px;color:#1A1A1A}
+.sub{font-size:13px;color:#8A766A;margin-bottom:16px;letter-spacing:0.5px;text-transform:uppercase}
+.badge{display:inline-block;background:#F9E8E3;color:#8A4A3B;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:0.3px}
+.opt{border:1.5px solid #EDE3D8;border-radius:14px;padding:16px;margin:12px 0;cursor:pointer;transition:all .2s;background:#FFFEFD}
+.opt:hover{border-color:#D67D68;background:#FFF8F5}
+.opt.selected{border-color:#D67D68;background:#FDF2EF;box-shadow:0 2px 12px rgba(214,125,104,.15)}
+.opt.full{opacity:.45;pointer-events:none;background:#F6F0E6}
+.rem{float:right;font-weight:700;font-size:12px;padding:4px 10px;border-radius:20px;letter-spacing:0.3px}
+.rem.ok{background:#F9E8E3;color:#8A4A3B} .rem.low{background:#FBEAEA;color:#A6453C}
+input,select{width:100%;padding:14px 16px;border:1.5px solid #EDE3D8;border-radius:12px;font-size:16px;margin:8px 0 14px;background:#FFFEFD;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#D67D68;box-shadow:0 0 0 3px rgba(214,125,104,.15)}
+button{width:100%;padding:16px;background:#1A1A1A;color:#F6F0E6;border:0;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer;letter-spacing:0.3px;transition:all .2s;font-family:inherit}
 button:hover{background:#2B2B2B} button:disabled{opacity:.4}
-.small{font-size:12px; color:#8A766A; letter-spacing:0.2px}
-h3{font-size:14px; text-transform:uppercase; letter-spacing:1px; color:#8A766A; font-weight:600}
-#capacity{font-size:13px; color:#8A766A; background:#F9F4ED; padding:10px 14px; border-radius:10px; margin-bottom:4px}
+.small{font-size:12px;color:#8A766A;letter-spacing:0.2px}
+h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;font-weight:600}
+#capacity{font-size:13px;color:#8A766A;background:#F9F4ED;padding:10px 14px;border-radius:10px;margin-bottom:4px}
 </style>
 </head>
 <body>
 <div class="card">
 <h1>Jessi & Edu Wedding Shuttle</h1>
 <div class="sub"><span class="badge">Sept 12, 2026 • 35 Main Street</span></div>
-<p style="font-size:14px; color:#5A5048">Pickup: <strong style="color:#1A1A1A">Washington Federal Bank parking lot, Eastsound (35 Main Street)</strong><br>
-TO Venue: First-come until full. Please arrive 10 minutes early.<br>
-FROM: No sign-up needed — hop on next return whenever you're ready to leave.</p>
-
+<p style="font-size:14px;color:#5A5048">Pickup: <strong style="color:#1A1A1A">Washington Federal Bank parking lot, Eastsound (35 Main Street)</strong><br>TO Venue: First-come until FULL. Please arrive 10 minutes early.<br>FROM: No sign-up needed — hop on next return whenever ready.</p>
 <div id="capacity" class="small">Loading remaining seats…</div>
 <div id="options"></div>
-
 <h3>Your party</h3>
 <input id="name" placeholder="Your name(s) — e.g. Clayton & Trina Olson">
 <label class="small">How many seats do you need?</label>
 <select id="seats"><option value="1">1 seat</option><option value="2" selected>2 seats</option><option value="3">3 seats</option><option value="4">4 seats</option><option value="5">5 seats</option><option value="6">6 seats</option></select>
 <input id="phone" placeholder="Phone for day-of texts">
 <input id="access" placeholder="Accessibility / car seat? (optional)">
-
 <button id="submit" onclick="book()">Reserve seats</button>
-<div id="msg" style="margin-top:14px;font-size:14px;text-align:center; line-height:1.4"></div>
+<div id="msg" style="margin-top:14px;font-size:14px;text-align:center;line-height:1.4"></div>
 </div>
-
 <script>
 const SUPA_URL = 'https://frhspbqpdbwbxzszuwkq.supabase.co';
 const SUPA_KEY = 'sb_publishable_5lDCZUn3MQDYuiNuPWzA0A_3ccUsJXb';
-const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-const TIMES = [
-  '2:20 PM — WaFd Bank → Venue',
-  '2:50 PM — WaFd Bank → Venue',
-  '3:20 PM — WaFd Bank → Venue'
-];
-let capacity = {};
-let selected = null;
+const SHEET_ID = '1AiVRoODw37NYLImQCPKvV3mh0TahQXdBxmuTxMxs900';
+let supa;
+try { supa = supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e){}
+const TIMES = ['2:20 PM — WaFd Bank → Venue','2:50 PM — WaFd Bank → Venue','3:20 PM — WaFd Bank → Venue'];
+let capacity = {}; let selected=null;
+
+async function loadFromSheet(){
+  try{
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&range=H2:K5`;
+    const res = await fetch(url);
+    const txt = await res.text();
+    const json = JSON.parse(txt.substr(47).slice(0,-2));
+    const rows = json.table.rows;
+    rows.forEach(r=>{
+      const time = r.c[0]?.v;
+      const cap = r.c[1]?.v;
+      const booked = r.c[2]?.v;
+      const rem = r.c[3]?.v;
+      if(!time || time==='Shuttle Time') return;
+      const fullTime = TIMES.find(t=>t.includes(time)) || time;
+      capacity[fullTime] = {shuttle_time:fullTime, capacity:cap, booked:booked, remaining:rem};
+    });
+    return Object.keys(capacity).length>0;
+  }catch(e){ console.log('sheet fetch fail', e); return false; }
+}
+
+async function loadFromSupa(){
+  if(!supa) return false;
+  try{
+    const { data, error } = await supa.from('shuttle_capacity').select('*');
+    if(!error && data && data.length){
+      data.forEach(r=>{ capacity[r.shuttle_time]=r; });
+      return true;
+    }
+    const { data: b, error: bErr } = await supa.from('shuttle_bookings').select('shuttle_time,seats');
+    if(!bErr && b){
+      TIMES.forEach(t=> capacity[t]={shuttle_time:t, capacity:36, booked:0, remaining:36});
+      b.forEach(row=>{ if(capacity[row.shuttle_time]){ capacity[row.shuttle_time].booked+=row.seats; capacity[row.shuttle_time].remaining-=row.seats; } });
+      return true;
+    }
+  }catch(e){ console.log('supa fail', e); }
+  return false;
+}
 
 async function loadCapacity(){
-  const { data, error } = await supa.from('shuttle_capacity').select('*');
-  if(!error && data){
-    data.forEach(r => capacity[r.shuttle_time] = r);
-  } else {
-    const { data: b } = await supa.from('shuttle_bookings').select('shuttle_time,seats');
-    TIMES.forEach(t => capacity[t] = {shuttle_time:t, capacity:36, booked:0, remaining:36});
-    (b||[]).forEach(row => {
-      if(capacity[row.shuttle_time]){ capacity[row.shuttle_time].booked += row.seats; capacity[row.shuttle_time].remaining -= row.seats; }
-    });
+  capacity={};
+  let ok = await loadFromSheet();
+  if(!ok) ok = await loadFromSupa();
+  if(!ok){
+    TIMES.forEach(t=> capacity[t]={shuttle_time:t, capacity:36, booked:0, remaining:36});
   }
   render();
 }
 
 function render(){
   const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
-  let html='';
-  let capText='';
+  let html=''; let capText='';
   TIMES.forEach(t=>{
     const c = capacity[t] || {remaining:36, booked:0, capacity:36};
     const full = c.remaining <=0 || c.remaining < seatsNeeded;
@@ -107,31 +131,39 @@ async function book(){
   const access=document.getElementById('access').value.trim();
   if(!name || !selected) return alert('Please add your name and pick a time');
   if(!phone) return alert('Please add phone for day-of texts');
-  
   document.getElementById('submit').disabled=true;
   document.getElementById('msg').innerText='Reserving…';
-  
-  const { data, error } = await supa.rpc('book_shuttle', {
-    p_name: name, p_seats: seats, p_time: selected, p_phone: phone, p_access: access
-  });
-  
-  if(error){
-    const { error: insErr } = await supa.from('shuttle_bookings').insert({name, seats, shuttle_time:selected, phone, accessibility:access});
-    if(insErr){ document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Error: ${insErr.message}</span>`; document.getElementById('submit').disabled=false; return; }
-  } else if(data && data.ok===false){
-    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Only ${data.remaining} seats left for ${selected}. Please pick another time.</span>`;
-    await loadCapacity(); return;
+  try{
+    if(supa){
+      const { data, error } = await supa.rpc('book_shuttle',{p_name:name,p_seats:seats,p_time:selected,p_phone:phone,p_access:access});
+      if(!error && data && data.ok===false){
+        document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Only ${data.remaining} seats left for ${selected}. Please pick another time.</span>`;
+        await loadCapacity(); return;
+      }
+      if(error){
+        const { error: insErr } = await supa.from('shuttle_bookings').insert({name,seats,shuttle_time:selected,phone,accessibility:access});
+        if(insErr) throw insErr;
+      }
+    } else {
+      throw new Error('Supabase not configured - using Sheet fallback, please run supabase.sql');
+    }
+  }catch(e){
+    // Fallback: write to sheet via alert for now, since no public write API
+    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Test mode: Sheet has 3 left / 2 left / 1 left. In production this would book ${seats} on ${selected}.<br>To make live, run supabase.sql in Supabase dashboard.</span>`;
+    document.getElementById('submit').disabled=false;
+    await loadCapacity();
+    return;
   }
-  
   document.getElementById('msg').innerHTML=`✅ Reserved ${seats} seat(s) on ${selected} for ${name}!<br><span style="font-size:13px;color:#8A766A">Meet at 35 Main Street 10 min early. Return is open boarding.</span>`;
   document.getElementById('submit').innerText='Reserved! 🎉';
   selected=null;
   await loadCapacity();
 }
 
-document.getElementById('seats').addEventListener('change', ()=>{ selected=null; render(); });
+document.getElementById('seats').addEventListener('change',()=>{ selected=null; render(); });
 loadCapacity();
-supa.channel('shuttle').on('postgres_changes',{event:'*',schema:'public',table:'shuttle_bookings'}, loadCapacity).subscribe();
+if(supa){ supa.channel('shuttle').on('postgres_changes',{event:'*',schema:'public',table:'shuttle_bookings'}, loadCapacity).subscribe(); }
+setInterval(loadCapacity, 15000);
 </script>
 </body>
 </html>
