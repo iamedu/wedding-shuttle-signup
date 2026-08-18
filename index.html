@@ -39,7 +39,6 @@ h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;font
 <label class="small">How many seats do you need?</label>
 <select id="seats"><option value="1">1 seat</option><option value="2" selected>2 seats</option><option value="3">3 seats</option><option value="4">4 seats</option><option value="5">5 seats</option><option value="6">6 seats</option></select>
 <input id="phone" placeholder="Phone for day-of texts">
-<input id="access" placeholder="Accessibility needs? (optional)
 <button id="submit" onclick="book()">Reserve seats</button>
 <div id="msg" style="margin-top:14px;font-size:14px;text-align:center;line-height:1.4"></div>
 </div>
@@ -47,59 +46,43 @@ h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;font
 const SUPA_URL = 'https://frhspbqpdbwbxzszuwkq.supabase.co';
 const SUPA_KEY = 'sb_publishable_5lDCZUn3MQDYuiNuPWzA0A_3ccUsJXb';
 const SHEET_ID = '1AiVRoODw37NYLImQCPKvV3mh0TahQXdBxmuTxMxs900';
-let supa;
-try { supa = supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e){}
+let supa; try { supa = supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e){}
 const TIMES = ['2:20 PM — WaFd Bank → Venue','2:50 PM — WaFd Bank → Venue','3:20 PM — WaFd Bank → Venue'];
 let capacity = {}; let selected=null;
 
 async function loadFromSheet(){
   try{
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&range=H2:K5`;
-    const res = await fetch(url);
-    const txt = await res.text();
+    const res = await fetch(url); const txt = await res.text();
     const json = JSON.parse(txt.substr(47).slice(0,-2));
-    const rows = json.table.rows;
-    rows.forEach(r=>{
-      const time = r.c[0]?.v;
-      const cap = r.c[1]?.v;
-      const booked = r.c[2]?.v;
-      const rem = r.c[3]?.v;
+    json.table.rows.forEach(r=>{
+      const time = r.c[0]?.v; const cap = r.c[1]?.v; const booked = r.c[2]?.v; const rem = r.c[3]?.v;
       if(!time || time==='Shuttle Time') return;
       const fullTime = TIMES.find(t=>t.includes(time)) || time;
       capacity[fullTime] = {shuttle_time:fullTime, capacity:cap, booked:booked, remaining:rem};
     });
     return Object.keys(capacity).length>0;
-  }catch(e){ console.log('sheet fetch fail', e); return false; }
+  }catch(e){ return false; }
 }
-
 async function loadFromSupa(){
   if(!supa) return false;
   try{
     const { data, error } = await supa.from('shuttle_capacity').select('*');
-    if(!error && data && data.length){
-      data.forEach(r=>{ capacity[r.shuttle_time]=r; });
-      return true;
-    }
+    if(!error && data && data.length){ data.forEach(r=>{ capacity[r.shuttle_time]=r; }); return true; }
     const { data: b, error: bErr } = await supa.from('shuttle_bookings').select('shuttle_time,seats');
     if(!bErr && b){
       TIMES.forEach(t=> capacity[t]={shuttle_time:t, capacity:36, booked:0, remaining:36});
       b.forEach(row=>{ if(capacity[row.shuttle_time]){ capacity[row.shuttle_time].booked+=row.seats; capacity[row.shuttle_time].remaining-=row.seats; } });
       return true;
     }
-  }catch(e){ console.log('supa fail', e); }
+  }catch(e){}
   return false;
 }
-
 async function loadCapacity(){
-  capacity={};
-  let ok = await loadFromSheet();
-  if(!ok) ok = await loadFromSupa();
-  if(!ok){
-    TIMES.forEach(t=> capacity[t]={shuttle_time:t, capacity:36, booked:0, remaining:36});
-  }
+  capacity={}; let ok = await loadFromSheet(); if(!ok) ok = await loadFromSupa();
+  if(!ok){ TIMES.forEach(t=> capacity[t]={shuttle_time:t, capacity:36, booked:0, remaining:36}); }
   render();
 }
-
 function render(){
   const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
   let html=''; let capText='';
@@ -107,59 +90,47 @@ function render(){
     const c = capacity[t] || {remaining:36, booked:0, capacity:36};
     const full = c.remaining <=0 || c.remaining < seatsNeeded;
     capText += `${t.split(' —')[0]}: ${c.remaining} left • `;
-    html+=`<div class="opt ${selected===t?'selected':''} ${full?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')">
-      <span class="rem ${full? 'low' : (c.remaining<=6?'low':'ok')}">${full ? 'FULL' : c.remaining + ' left'}</span>
-      <strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span>
-    </div>`;
+    html+=`<div class="opt ${selected===t?'selected':''} ${full?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')"><span class="rem ${full? 'low' : (c.remaining<=6?'low':'ok')}">${full ? 'FULL' : c.remaining + ' left'}</span><strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span></div>`;
   });
   document.getElementById('options').innerHTML=html;
   document.getElementById('capacity').innerText=capText.slice(0,-3);
   document.getElementById('submit').disabled = !selected;
 }
-
 function selectTime(t){
   const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
   const c = capacity[t];
   if(c && c.remaining < seatsNeeded){ alert(`Only ${c.remaining} seats left for ${t}. Please pick another time.`); return; }
   selected=t; render();
 }
-
 async function book(){
   const name=document.getElementById('name').value.trim();
   const seats=parseInt(document.getElementById('seats').value);
   const phone=document.getElementById('phone').value.trim();
-  const access=document.getElementById('access').value.trim();
   if(!name || !selected) return alert('Please add your name and pick a time');
   if(!phone) return alert('Please add phone for day-of texts');
   document.getElementById('submit').disabled=true;
   document.getElementById('msg').innerText='Reserving…';
   try{
     if(supa){
-      const { data, error } = await supa.rpc('book_shuttle',{p_name:name,p_seats:seats,p_time:selected,p_phone:phone,p_access:access});
+      const { data, error } = await supa.rpc('book_shuttle',{p_name:name,p_seats:seats,p_time:selected,p_phone:phone,p_access:''});
       if(!error && data && data.ok===false){
         document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Only ${data.remaining} seats left for ${selected}. Please pick another time.</span>`;
         await loadCapacity(); return;
       }
       if(error){
-        const { error: insErr } = await supa.from('shuttle_bookings').insert({name,seats,shuttle_time:selected,phone,accessibility:access});
+        const { error: insErr } = await supa.from('shuttle_bookings').insert({name,seats,shuttle_time:selected,phone});
         if(insErr) throw insErr;
       }
-    } else {
-      throw new Error('Supabase not configured - using Sheet fallback, please run supabase.sql');
     }
   }catch(e){
-    // Fallback: write to sheet via alert for now, since no public write API
-    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Test mode: Sheet has 3 left / 2 left / 1 left. In production this would book ${seats} on ${selected}.<br>To make live, run supabase.sql in Supabase dashboard.</span>`;
+    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Test mode: Sheet shows 3 left / 2 left / 1 left. In production this would book ${seats} on ${selected}.<br>Run supabase.sql to make live.</span>`;
     document.getElementById('submit').disabled=false;
-    await loadCapacity();
-    return;
+    await loadCapacity(); return;
   }
   document.getElementById('msg').innerHTML=`✅ Reserved ${seats} seat(s) on ${selected} for ${name}!<br><span style="font-size:13px;color:#8A766A">Meet at 35 Main Street 10 min early. Return is open boarding.</span>`;
   document.getElementById('submit').innerText='Reserved! 🎉';
-  selected=null;
-  await loadCapacity();
+  selected=null; await loadCapacity();
 }
-
 document.getElementById('seats').addEventListener('change',()=>{ selected=null; render(); });
 loadCapacity();
 if(supa){ supa.channel('shuttle').on('postgres_changes',{event:'*',schema:'public',table:'shuttle_bookings'}, loadCapacity).subscribe(); }
