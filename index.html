@@ -84,13 +84,13 @@ async function loadCapacity(){
   render();
 }
 function render(){
-  const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
   let html=''; let capText='';
   TIMES.forEach(t=>{
     const c = capacity[t] || {remaining:36, booked:0, capacity:36};
-    const full = c.remaining <=0 || c.remaining < seatsNeeded;
+    const isFull = c.remaining <=0;
+    const isLow = c.remaining>0 && c.remaining<=6;
     capText += `${t.split(' —')[0]}: ${c.remaining} left • `;
-    html+=`<div class="opt ${selected===t?'selected':''} ${full?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')"><span class="rem ${full? 'low' : (c.remaining<=6?'low':'ok')}">${full ? 'FULL' : c.remaining + ' left'}</span><strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span></div>`;
+    html+=`<div class="opt ${selected===t?'selected':''} ${isFull?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')"><span class="rem ${isFull? 'low' : (isLow?'low':'ok')}">${isFull ? 'FULL' : c.remaining + ' left'}</span><strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span></div>`;
   });
   document.getElementById('options').innerHTML=html;
   document.getElementById('capacity').innerText=capText.slice(0,-3);
@@ -99,7 +99,13 @@ function render(){
 function selectTime(t){
   const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
   const c = capacity[t];
-  if(c && c.remaining < seatsNeeded){ alert(`Only ${c.remaining} seats left for ${t}. Please pick another time.`); return; }
+  if(!c) return;
+  if(c.remaining <=0){ alert(`Sorry, ${t} is FULL. Please pick another time.`); return; }
+  if(c.remaining < seatsNeeded){
+    const ok = confirm(`Only ${c.remaining} seat(s) left for ${t}, but you need ${seatsNeeded}. Do you want to switch to ${c.remaining} seat(s) and pick this time anyway?`);
+    if(!ok) return;
+    document.getElementById('seats').value = String(c.remaining);
+  }
   selected=t; render();
 }
 async function book(){
@@ -108,6 +114,10 @@ async function book(){
   const phone=document.getElementById('phone').value.trim();
   if(!name || !selected) return alert('Please add your name and pick a time');
   if(!phone) return alert('Please add phone for day-of texts');
+  const c = capacity[selected];
+  if(c && c.remaining < seats){
+    return alert(`Only ${c.remaining} left for ${selected}. Please pick ${c.remaining} seat(s) or another time.`);
+  }
   document.getElementById('submit').disabled=true;
   document.getElementById('msg').innerText='Reserving…';
   try{
@@ -123,7 +133,7 @@ async function book(){
       }
     }
   }catch(e){
-    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Test mode: Sheet shows 3 left / 2 left / 1 left. In production this would book ${seats} on ${selected}.<br>Run supabase.sql to make live.</span>`;
+    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Booking error, try again. Sheet shows ${Object.values(capacity).map(c=>c.remaining+' left').join(', ')}</span>`;
     document.getElementById('submit').disabled=false;
     await loadCapacity(); return;
   }
