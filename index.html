@@ -25,6 +25,7 @@ button:hover{background:#2B2B2B} button:disabled{opacity:.4}
 .small{font-size:12px;color:#8A766A;letter-spacing:0.2px}
 h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;font-weight:600}
 #capacity{font-size:13px;color:#8A766A;background:#F9F4ED;padding:10px 14px;border-radius:10px;margin-bottom:4px}
+.step{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#D67D68;font-weight:700;margin:18px 0 6px}
 </style>
 </head>
 <body>
@@ -32,13 +33,19 @@ h3{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;font
 <h1>Jessi & Edu Wedding Shuttle</h1>
 <div class="sub"><span class="badge">Sept 12, 2026 • 35 Main Street</span></div>
 <p style="font-size:14px;color:#5A5048">Pickup: <strong style="color:#1A1A1A">Washington Federal Bank parking lot, Eastsound (35 Main Street)</strong><br>TO Venue: First-come until FULL. Please arrive 10 minutes early.<br>FROM: No sign-up needed — hop on next return whenever ready.</p>
+
+<div class="step">Step 1 — How many seats?</div>
+<label class="small" for="seats">Total seats needed for your party</label>
+<select id="seats"><option value="1">1 seat</option><option value="2" selected>2 seats</option><option value="3">3 seats</option><option value="4">4 seats</option><option value="5">5 seats</option><option value="6">6 seats</option></select>
+
+<div class="step">Step 2 — Pick your shuttle (shows seats left for your party)</div>
 <div id="capacity" class="small">Loading remaining seats…</div>
 <div id="options"></div>
-<h3>Your party</h3>
+
+<div class="step">Step 3 — Your details</div>
 <input id="name" placeholder="Your name(s) — e.g. Clayton & Trina Olson">
-<label class="small">How many seats do you need?</label>
-<select id="seats"><option value="1">1 seat</option><option value="2" selected>2 seats</option><option value="3">3 seats</option><option value="4">4 seats</option><option value="5">5 seats</option><option value="6">6 seats</option></select>
 <input id="phone" placeholder="Phone for day-of texts">
+
 <button id="submit" onclick="book()">Reserve seats</button>
 <div id="msg" style="margin-top:14px;font-size:14px;text-align:center;line-height:1.4"></div>
 </div>
@@ -84,16 +91,18 @@ async function loadCapacity(){
   render();
 }
 function render(){
+  const seatsNeeded = parseInt(document.getElementById('seats').value)||1;
   let html=''; let capText='';
   TIMES.forEach(t=>{
     const c = capacity[t] || {remaining:36, booked:0, capacity:36};
     const isFull = c.remaining <=0;
-    const isLow = c.remaining>0 && c.remaining<=6;
+    const notEnough = c.remaining>0 && c.remaining < seatsNeeded;
     capText += `${t.split(' —')[0]}: ${c.remaining} left • `;
-    html+=`<div class="opt ${selected===t?'selected':''} ${isFull?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')"><span class="rem ${isFull? 'low' : (isLow?'low':'ok')}">${isFull ? 'FULL' : c.remaining + ' left'}</span><strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span></div>`;
+    const badge = isFull ? 'FULL' : (notEnough ? `${c.remaining} left - not enough for ${seatsNeeded}` : `${c.remaining} left`);
+    html+=`<div class="opt ${selected===t?'selected':''} ${isFull?'full':''}" onclick="selectTime('${t.replace(/'/g,"\\'")}')"><span class="rem ${isFull||notEnough? 'low' : 'ok'}">${badge}</span><strong>${t}</strong><br><span style="font-size:12px;color:#8A766A">${c.booked||0} booked</span></div>`;
   });
   document.getElementById('options').innerHTML=html;
-  document.getElementById('capacity').innerText=capText.slice(0,-3);
+  document.getElementById('capacity').innerText=capText.slice(0,-3) + ` • for ${seatsNeeded} seat${seatsNeeded>1?'s':''}`;
   document.getElementById('submit').disabled = !selected;
 }
 function selectTime(t){
@@ -102,9 +111,8 @@ function selectTime(t){
   if(!c) return;
   if(c.remaining <=0){ alert(`Sorry, ${t} is FULL. Please pick another time.`); return; }
   if(c.remaining < seatsNeeded){
-    const ok = confirm(`Only ${c.remaining} seat(s) left for ${t}, but you need ${seatsNeeded}. Do you want to switch to ${c.remaining} seat(s) and pick this time anyway?`);
-    if(!ok) return;
-    document.getElementById('seats').value = String(c.remaining);
+    alert(`Only ${c.remaining} seat(s) left for ${t}, but you need ${seatsNeeded}. Please pick a time with enough seats or reduce party size.`);
+    return;
   }
   selected=t; render();
 }
@@ -115,9 +123,7 @@ async function book(){
   if(!name || !selected) return alert('Please add your name and pick a time');
   if(!phone) return alert('Please add phone for day-of texts');
   const c = capacity[selected];
-  if(c && c.remaining < seats){
-    return alert(`Only ${c.remaining} left for ${selected}. Please pick ${c.remaining} seat(s) or another time.`);
-  }
+  if(c && c.remaining < seats){ return alert(`Only ${c.remaining} left for ${selected}. Please pick another time or reduce seats.`); }
   document.getElementById('submit').disabled=true;
   document.getElementById('msg').innerText='Reserving…';
   try{
@@ -133,7 +139,7 @@ async function book(){
       }
     }
   }catch(e){
-    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Booking error, try again. Sheet shows ${Object.values(capacity).map(c=>c.remaining+' left').join(', ')}</span>`;
+    document.getElementById('msg').innerHTML=`<span style="color:#A6453C">Error, try again.</span>`;
     document.getElementById('submit').disabled=false;
     await loadCapacity(); return;
   }
