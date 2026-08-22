@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shuttle Admin — Jessi & Edu</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;max-width:960px;margin:0 auto;padding:24px;background:#F6F0E6;color:#1A1A1A;line-height:1.5}
+.card{background:#FFF;border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.06);margin-bottom:20px;border:1px solid #EDE3D8}
+h1{margin:0 0 4px;font-size:22px} .sub{font-size:13px;color:#8A766A;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.stat{border:1.5px solid #EDE3D8;border-radius:12px;padding:14px;text-align:center;background:#FFFEFD}
+.stat strong{font-size:26px;display:block;color:#D67D68} .stat span{font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#8A766A}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+th{ text-align:left; font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8A766A;padding:8px;border-bottom:2px solid #EDE3D8}
+td{padding:10px 8px;border-bottom:1px solid #F0E8DE;vertical-align:top}
+tr:hover{background:#FDF6EF}
+input{padding:10px 12px;border:1.5px solid #EDE3D8;border-radius:8px;font-size:14px;width:100%;max-width:320px}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#F9E8E3;color:#8A4A3B}
+.btn{padding:10px 14px;border:1px solid #EDE3D8;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:600}
+.btn:hover{background:#F6F0E6}
+.tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.tab{padding:8px 14px;border-radius:20px;border:1.5px solid #EDE3D8;cursor:pointer;font-size:13px;background:white}
+.tab.active{background:#1A1A1A;color:#F6F0E6;border-color:#1A1A1A}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🚌 Shuttle Responses — Admin</h1>
+<div class="sub">Live from Supabase • Auto-refresh every 15s • <span id="lastUpdate"></span></div>
+
+<div class="grid" id="stats">
+<div class="stat"><strong id="s-total">—</strong><span>Total Seats Booked / 108</span></div>
+<div class="stat"><strong id="s-parties">—</strong><span>Parties</span></div>
+<div class="stat"><strong id="s-rem">—</strong><span>Seats Remaining</span></div>
+</div>
+
+<div class="grid">
+<div class="stat"><strong id="s-220">—</strong><span>2:20 PM booked (36 cap)</span><div style="font-size:12px;color:#8A766A" id="s-220-rem"></div></div>
+<div class="stat"><strong id="s-250">—</strong><span>2:50 PM booked</span><div style="font-size:12px;color:#8A766A" id="s-250-rem"></div></div>
+<div class="stat"><strong id="s-320">—</strong><span>3:20 PM booked</span><div style="font-size:12px;color:#8A766A" id="s-320-rem"></div></div>
+</div>
+
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px">
+<input id="search" placeholder="Search name, phone…" oninput="filter()">
+<button class="btn" onclick="loadData()">↻ Refresh</button>
+<button class="btn" onclick="exportCSV()">⬇️ Export CSV</button>
+<a class="btn" style="text-decoration:none" href="https://docs.google.com/spreadsheets/d/1AiVRoODw37NYLImQCPKvV3mh0TahQXdBxmuTxMxs900/edit" target="_blank">📊 Tracker Sheet</a>
+<a class="btn" style="text-decoration:none" href="https://docs.google.com/spreadsheets/d/1IF4J-XTtu1HAQiG_qbJLib2MusV79VE4LGFTXFjie50/edit" target="_blank">📋 Contacts by Run</a>
+</div>
+
+<div class="tabs" id="tabs">
+<div class="tab active" onclick="setTab('all')">All</div>
+<div class="tab" onclick="setTab('2:20')">2:20 PM</div>
+<div class="tab" onclick="setTab('2:50')">2:50 PM</div>
+<div class="tab" onclick="setTab('3:20')">3:20 PM</div>
+</div>
+</div>
+
+<div class="card">
+<table id="tbl">
+<thead><tr><th>Time</th><th>Name</th><th>Seats</th><th>Phone</th><th>Notes</th><th>Booked At</th></tr></thead>
+<tbody id="tbody"><tr><td colspan=6 style="text-align:center;color:#8A766A;padding:24px">Loading…</td></tr></tbody>
+</table>
+</div>
+
+<div class="card" style="font-size:13px;color:#5A5048;line-height:1.6">
+<strong>Links:</strong><br>
+• Public form: <a href="https://shuttle.jessisaysedu.com">shuttle.jessisaysedu.com</a><br>
+• Tracker Sheet (auto-synced every 15 min via cron): <a href="https://docs.google.com/spreadsheets/d/1AiVRoODw37NYLImQCPKvV3mh0TahQXdBxmuTxMxs900/edit">Sheet 1AiVRoODw</a><br>
+• Contacts per run: <a href="https://docs.google.com/spreadsheets/d/1IF4J-XTtu1HAQiG_qbJLib2MusV79VE4LGFTXFjie50/edit">Sheet 1IF4J-XTt</a><br>
+• Supabase: project frhspbqpdbwbxzszuwkq<br>
+<br><span style="font-size:12px;color:#8A766A">No PIN needed — RLS allows public read. Don't share this admin URL publicly. For day-of, print contacts sheet per run.</span>
+</div>
+
+<script>
+const SUPA_URL = 'https://frhspbqpdbwbxzszuwkq.supabase.co';
+const SUPA_KEY = 'sb_publishable_5lDCZUn3MQDYuiNuPWzA0A_3ccUsJXb';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+let allData = [];
+let activeTab = 'all';
+
+function timeShort(t){ return t.split(' —')[0]; }
+
+async function loadData(){
+  document.getElementById('lastUpdate').innerText = 'loading…';
+  try{
+    const { data: bookings, error } = await supa.from('shuttle_bookings').select('*').order('shuttle_time').order('created_at', {ascending:false});
+    if(error){ throw error; }
+    allData = bookings || [];
+    render();
+    document.getElementById('lastUpdate').innerText = `updated ${new Date().toLocaleTimeString()}`;
+  }catch(e){
+    document.getElementById('tbody').innerHTML = `<tr><td colspan=6 style="color:#A6453C">Error loading: ${e.message}</td></tr>`;
+    document.getElementById('lastUpdate').innerText = 'error';
+  }
+  // also load capacity via view
+  try{
+    const { data: cap } = await supa.from('shuttle_capacity').select('*');
+    if(cap){
+      const sums={};
+      cap.forEach(r=>sums[r.shuttle_time]=r);
+      const t1 = sums['2:20 PM — WaFd Bank → Venue']||{booked:0,remaining:36};
+      const t2 = sums['2:50 PM — WaFd Bank → Venue']||{booked:0,remaining:36};
+      const t3 = sums['3:20 PM — WaFd Bank → Venue']||{booked:0,remaining:36};
+      document.getElementById('s-220').innerText=t1.booked; document.getElementById('s-220-rem').innerText=`${t1.remaining} left`;
+      document.getElementById('s-250').innerText=t2.booked; document.getElementById('s-250-rem').innerText=`${t2.remaining} left`;
+      document.getElementById('s-320').innerText=t3.booked; document.getElementById('s-320-rem').innerText=`${t3.remaining} left`;
+      document.getElementById('s-total').innerText=t1.booked+t2.booked+t3.booked;
+      document.getElementById('s-rem').innerText=(108-(t1.booked+t2.booked+t3.booked));
+    }
+  }catch{}
+}
+
+function render(){
+  document.getElementById('s-parties').innerText=allData.length;
+  const filtered = allData.filter(r=>{
+    const q = document.getElementById('search').value.toLowerCase();
+    const matchSearch = !q || (r.name||'').toLowerCase().includes(q) || (r.phone||'').toLowerCase().includes(q) || (r.shuttle_time||'').toLowerCase().includes(q);
+    let matchTab=true;
+    if(activeTab!=='all'){
+      matchTab = (r.shuttle_time||'').includes(activeTab);
+    }
+    return matchSearch && matchTab;
+  });
+  let html='';
+  filtered.forEach(r=>{
+    const when = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+    html+=`<tr>
+      <td><span class="badge">${timeShort(r.shuttle_time||'')}</span></td>
+      <td><strong>${esc(r.name||'')}</strong></td>
+      <td>${r.seats||''}</td>
+      <td><a href="tel:${esc(r.phone||'')}" style="color:#1A1A1A;text-decoration:none">${esc(r.phone||'')}</a></td>
+      <td style="max-width:200px;word-wrap:break-word">${esc(r.accessibility||'')}</td>
+      <td style="font-size:12px;color:#8A766A">${when}</td>
+    </tr>`;
+  });
+  if(!html) html=`<tr><td colspan=6 style="text-align:center;color:#8A766A;padding:24px">No results${activeTab!=='all'?' for '+activeTab:''}</td></tr>`;
+  document.getElementById('tbody').innerHTML=html;
+}
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function filter(){ render(); }
+function setTab(t){ activeTab=t; document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active')); const map={all:0,'2:20':1,'2:50':2,'3:20':3}; document.querySelectorAll('.tab')[map[t]].classList.add('active'); render(); }
+
+function exportCSV(){
+  if(!allData.length) return alert('No data');
+  const header=['created_at','name','seats','shuttle_time','phone','accessibility'];
+  const rows=[header.join(',')];
+  allData.forEach(r=>{ rows.push(header.map(h=>{ const v=(r[h]||'').toString().replace(/"/g,'""'); return `"${v}"`; }).join(',')); });
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`shuttle-bookings-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+}
+
+loadData();
+setInterval(loadData,15000);
+// realtime
+supa.channel('admin').on('postgres_changes',{event:'*',schema:'public',table:'shuttle_bookings'}, loadData).subscribe();
+</script>
+</body>
+</html>
